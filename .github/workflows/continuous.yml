@@ -9,25 +9,26 @@ on:
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
-    timeout-minutes: 355 # Less than 360 (6 hours max)
+    timeout-minutes: 355 # Must be < 360 (GitHub's max)
 
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Set up Node.js (or Python)
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Change to your required version
+          node-version: '20'
 
       - name: Install dependencies
-        run: npm install # or pip install -r requirements.txt
+        run: npm install
 
-      - name: Run your script in loop
+      - name: Run script in loop for ~5h 50m
         run: |
-          echo "Starting continuous process..."
-          while true; do
-            node index.js  # Replace with your main script
+          echo "Starting controlled loop..."
+          end=$((SECONDS+21000)) # 21000 sec = 5h 50m
+          while [ $SECONDS -lt $end ]; do
+            node index.js
             echo "Script finished, restarting in 5 sec..."
             sleep 5
           done
