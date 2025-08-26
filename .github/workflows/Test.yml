@@ -27,20 +27,21 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y openssh-server
+          sudo mkdir -p /var/run/sshd
           sudo service ssh start
           echo "SSH server started on port 22"
+          # Optional: Set a password for the 'ubuntu' user if needed for security
+          # echo 'ubuntu:password' | sudo chpasswd
         continue-on-error: true
 
       - name: Start ngrok for Remote SSH Access
-        uses: ncasto/ngrok-action@v3
+        uses: wong2/engrok@v1.2
         with:
-          ngrok_version: 3
-          auth_token: ${{ secrets.NGROK_AUTHTOKEN }}
-          expose_remote_addr: 0.0.0.0:22
-          inspect_db_dir: /tmp/ngrok
-          enable_ngrok_ssh: true  # Enables SSH tunneling
+          authtoken: ${{ secrets.NGROK_AUTHTOKEN }}
+          tunnel: ssh
+          addr: 22  # Expose SSH port 22
         continue-on-error: true
-        # Outputs: The action will print the public SSH URL (e.g., ssh <user>@<ngrok-subdomain>.ngrok.io) in the logs
+        # Outputs: Check logs for the ngrok URL (e.g., tcp://0.tcp.ngrok.io:12345 or ssh://ubuntu@0.tcp.ngrok.io:12345)
 
       - name: Run Script in Loop
         run: |
