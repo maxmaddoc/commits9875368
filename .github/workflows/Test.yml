@@ -1,4 +1,4 @@
-name: Continuous tmate Run
+name: Continuous ngrok Run
 
 on:
   workflow_dispatch: # Allow manual trigger
@@ -6,7 +6,7 @@ on:
     - cron: "*/30 * * * *" # Backup trigger every 30 minutes for continuity
 
 jobs:
-  keep-alive-tmate:
+  keep-alive-ngrok:
     runs-on: ubuntu-latest
     timeout-minutes: 355 # Under 6-hour limit
 
@@ -23,15 +23,28 @@ jobs:
         run: npm install
         continue-on-error: true
 
-      - name: Start tmate for Remote Access
-        uses: mxschmitt/action-tmate@v3
+      - name: Install and Start SSH Server
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssh-server
+          sudo service ssh start
+          echo "SSH server started on port 22"
+        continue-on-error: true
+
+      - name: Start ngrok for Remote SSH Access
+        uses: ncasto/ngrok-action@v3
         with:
-          limit-access-to-actor: false # Allow access without GitHub auth (optional: set to true for security)
-        continue-on-error: true # Continue if tmate setup fails
+          ngrok_version: 3
+          auth_token: ${{ secrets.NGROK_AUTHTOKEN }}
+          expose_remote_addr: 0.0.0.0:22
+          inspect_db_dir: /tmp/ngrok
+          enable_ngrok_ssh: true  # Enables SSH tunneling
+        continue-on-error: true
+        # Outputs: The action will print the public SSH URL (e.g., ssh <user>@<ngrok-subdomain>.ngrok.io) in the logs
 
       - name: Run Script in Loop
         run: |
-          echo "Starting controlled loop for ~5h 50m with tmate access..."
+          echo "Starting controlled loop for ~5h 50m with ngrok access..."
           end=$((SECONDS+21000)) # 21000 seconds = 5h 50m
           while [ $SECONDS -lt $end ]; do
             echo "Running main script..."
