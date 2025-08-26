@@ -1,0 +1,43 @@
+name: Continuous 24/7 Run
+
+on:
+  workflow_dispatch: # Allow manual trigger
+  repository_dispatch: # Used for self re-trigger
+  schedule:
+    - cron: "*/30 * * * *" # Safety backup trigger every 30 min
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355 # Less than 360 (6 hours max)
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (or Python)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Change to your required version
+
+      - name: Install dependencies
+        run: npm install # or pip install -r requirements.txt
+
+      - name: Run your script in loop
+        run: |
+          echo "Starting continuous process..."
+          while true; do
+            node index.js  # Replace with your main script
+            echo "Script finished, restarting in 5 sec..."
+            sleep 5
+          done
+
+      - name: Re-trigger Workflow
+        if: always()
+        run: |
+          echo "Re-triggering workflow before timeout..."
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -d '{"event_type":"rerun"}'
